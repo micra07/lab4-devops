@@ -1,0 +1,63 @@
+---
+- name: Deploy Lab4 Service
+  hosts: lab4
+  become: yes
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python3
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Create service directory
+      file:
+        path: /opt/lab4-service/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy index.html
+      copy:
+        dest: /opt/lab4-service/html/index.html
+        content: |
+          <html>
+          <body>
+          <h1>Студент: Ушаков</h1>
+          </body>
+          </html>
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Copy service script
+      copy:
+        src: ./service.sh
+        dest: /opt/lab4-service/service.sh
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy systemd unit
+      copy:
+        src: ./lab4-service.service
+        dest: /etc/systemd/system/lab4-service.service
+        mode: '0644'
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start service
+      systemd:
+        name: lab4-service
+        state: started
+        enabled: yes
+
+    - name: Healthcheck HTTP 200
+      uri:
+        url: http://127.0.0.1:8000/
+        status_code: 200
